@@ -1,9 +1,73 @@
 ---
-name: "..."
-description: "..."
+name: 'Deploy Slack Notify'
+description: >-
+  Post and update a single Slack message that tracks one commit as it moves
+  through the deployment purposes (dev → stage → demo → prod by default), or send
+  the wider product channel an announcement for the final deployment. All failures are non-fatal.
+
 inputs:
-  ...
+  mode:
+    description: >-
+      "post" to create the per-commit status message, "update" to edit it,
+      "announce" to post a standalone message about the final deployment.
+    required: true
+  commit-sha:
+    description: 'Commit being deployed; used to find the source PR and author'
+    required: false
+    default: ''
+  version:
+    description: 'Deployment version to display after the repository name in Slack'
+    required: false
+    default: ''
+  tracked-purpose:
+    description: 'Comma-separated purposes in deployment order. The last purpose sets the deployment baseline.'
+    required: false
+    default: 'dev, stage, demo, prod'
+  jobNamePattern:
+    description: 'Job name template for live status lookup. $purpose is replaced with the tracked purpose name.'
+    required: false
+    default: 'deploy ($purpose)'
+  purpose:
+    description: 'Tracked deployment purpose that the status hint applies to — for post/update'
+    required: false
+    default: ''
+  status:
+    description: 'Status hint for the specified purpose (a job result, or in_progress/pending) — for post/update'
+    required: false
+    default: 'pending'
+  message-ts:
+    description: 'Slack message ts to update (update mode); output of the post mode'
+    required: false
+    default: ''
+  channel-id:
+    description: 'Slack channel id returned by the post mode (update mode)'
+    required: false
+    default: ''
+  slack-bot-token:
+    description: 'Slack bot token with chat:write (empty = notifier no-ops)'
+    required: false
+    default: ''
+  slack-channel:
+    description: 'Slack channel id/name to post to (empty = notifier no-ops)'
+    required: false
+    default: ''
+  github-token:
+    description: >-
+      Token with pull-requests:read (PR/author lookup) and actions:read (this
+      run's jobs + pending approvals, and the deploy history behind the
+      change list)
+    required: true
+  user-map-path:
+    description: 'Path to the GitHub-login -> Slack-id map, relative to the repo root'
+    required: false
+    default: '.github/deploy-notify/user-map.json'
+
 outputs:
-  ...
+  message-ts:
+    description: 'Slack ts of the posted message (post mode)'
+  channel-id:
+    description: 'Resolved Slack channel id of the posted message (post mode)'
+
 runs:
-  ...
+  using: 'node24'
+  main: 'notify.js'
