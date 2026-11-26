@@ -226,10 +226,11 @@ function renderPurposeFields(purposes) {
   });
 }
 
-function renderFooter({ runUrl = '', compareUrl = '', commitUrl = null, shortSha = '' }) {
+function renderFooter({ runUrl = '', compareUrl = '', commitUrl = null, shortSha = '', releaseUrl = '' }) {
   const parts = [];
   if (runUrl) parts.push(renderLink(runUrl, 'View pipeline'));
   if (compareUrl) parts.push(renderLink(compareUrl, 'Compare'));
+  if (releaseUrl) parts.push(renderLink(releaseUrl, 'Release'));
   if (shortSha) parts.push(commitUrl ? renderLink(commitUrl, shortSha) : `\`${shortSha}\``);
   return parts.join('  ·  ');
 }
@@ -244,6 +245,12 @@ function buildFallbackText({ headline, subjectText, purposes }) {
 function subjectPlainText({ pr, shortSha }) {
   if (pr) return `#${pr.number} ${pr.title}`;
   return shortSha || 'this commit';
+}
+
+function changeSubject({ release, changes, pr, shortSha }) {
+  if (release) return release.url ? renderLink(release.url, 'Release notes') : 'Release notes';
+  if (changes.length > 1) return renderChangeCount(changes.length, groupCommitsByAuthor(changes).length);
+  return subjectPlainText({ pr, shortSha });
 }
 
 function renderChangeCount(commitCount, authorCount) {
@@ -275,6 +282,14 @@ function renderChangeList({ changes, userMap = {}, repoUrl = '', maxPerAuthor = 
   ].join('\n');
 }
 
+function renderReleaseNotes(release) {
+  const body = release.body.trim();
+  if (!body) return null;
+  const limit = 12000;
+  const text = body.length > limit ? `${body.slice(0, limit - 1).toWellFormed()}…` : body;
+  return { type: 'markdown', text };
+}
+
 function buildDeployMessage({
   purposes,
   repository,
@@ -284,6 +299,7 @@ function buildDeployMessage({
   runUrl = '',
   commitUrl = null,
   shortSha = '',
+  release = null,
   changes = [],
   userMap = {},
   repoUrl = '',
@@ -296,7 +312,7 @@ function buildDeployMessage({
   const changeCount = changes.length;
 
   const blocks = [renderHeadlineBlock(emoji, headline)];
-  if (changeCount <= 1) {
+  if (!release && changeCount <= 1) {
     blocks.push({
       type: 'section',
       text: { type: 'mrkdwn', text: `*${renderSubject({ pr, commitUrl, shortSha })}*\n${mention}` },
@@ -308,19 +324,19 @@ function buildDeployMessage({
   for (let offset = 0; offset < fields.length; offset += maxFieldsPerSection) {
     blocks.push({ type: 'section', fields: fields.slice(offset, offset + maxFieldsPerSection) });
   }
-  if (changeCount > 1) {
+  if (release) {
+    const notes = renderReleaseNotes(release);
+    if (notes) blocks.push({ type: 'divider' }, notes);
+  } else if (changeCount > 1) {
     const list = renderChangeList({ changes, userMap, repoUrl, maxPerAuthor });
     if (list) blocks.push({ type: 'divider' }, { type: 'section', text: { type: 'mrkdwn', text: list } });
   }
-  const footer = renderFooter({ runUrl, compareUrl, commitUrl, shortSha });
+  const footer = renderFooter({ runUrl, compareUrl, commitUrl, shortSha, releaseUrl: release?.url });
   if (footer) blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: footer }] });
 
   const text = buildFallbackText({
     headline,
-    subjectText:
-      changeCount > 1
-        ? renderChangeCount(changeCount, groupCommitsByAuthor(changes).length)
-        : subjectPlainText({ pr, shortSha }),
+    subjectText: changeSubject({ release, changes, pr, shortSha }),
     purposes,
   });
   return { text, blocks };
@@ -335,6 +351,7 @@ function buildProdAnnouncement({
   runUrl = '',
   commitUrl = null,
   shortSha = '',
+  release = null,
   changes = [],
   userMap = {},
   repoUrl = '',
@@ -345,7 +362,10 @@ function buildProdAnnouncement({
   const destination = finalPurpose === DEFAULT_FINAL_PURPOSE ? 'production' : finalPurpose;
   const headline = formatRepositoryHeadline(repository, `Shipped to ${destination}`, version);
   const blocks = [renderHeadlineBlock(':rocket:', headline)];
-  if (changeCount > 1) {
+  if (release) {
+    const notes = renderReleaseNotes(release);
+    if (notes) blocks.push(notes);
+  } else if (changeCount > 1) {
     const list = renderChangeList({ changes, userMap, repoUrl, maxPerAuthor });
     if (list) blocks.push({ type: 'section', text: { type: 'mrkdwn', text: list } });
   } else {
@@ -354,12 +374,9 @@ function buildProdAnnouncement({
       text: { type: 'mrkdwn', text: `*${renderSubject({ pr, commitUrl, shortSha })}*\n${mention}` },
     });
   }
-  const footer = renderFooter({ runUrl, compareUrl, commitUrl, shortSha });
+  const footer = renderFooter({ runUrl, compareUrl, commitUrl, shortSha, releaseUrl: release?.url });
   if (footer) blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: footer }] });
-  const subjectText =
-    changeCount > 1
-      ? renderChangeCount(changeCount, groupCommitsByAuthor(changes).length)
-      : subjectPlainText({ pr, shortSha });
+  const subjectText = changeSubject({ release, changes, pr, shortSha });
   const text = `${escapeSlackText(headline)} — ${subjectText}`;
   return { text, blocks };
 }

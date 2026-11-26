@@ -422,6 +422,38 @@ describe('buildDeployMessage', () => {
   });
 });
 
+describe.each([
+  ['deploy status', buildDeployMessage],
+  ['announcement', buildProdAnnouncement],
+])('%s release notes', (_, buildMessage) => {
+  const releaseUrl = 'https://github.com/org/repo/releases/tag/v1.2.3';
+  const purposes = [{ name: 'release', status: 'success' }];
+
+  it('uses the release Markdown in place of the commit list', () => {
+    const body = '# Changes\n\n- **New:** [Details](https://example.com)';
+    const { text, blocks } = buildMessage({
+      purposes,
+      changes: sampleChanges,
+      release: { body, url: releaseUrl },
+    });
+    expect(blocks).toContainEqual({ type: 'markdown', text: body });
+    expect(blocks.some((block) => block.text?.type === 'mrkdwn')).toBe(false);
+    expect(text).toContain(`<${releaseUrl}|Release notes>`);
+    expect(blocks.at(-1).elements[0].text).toContain(`<${releaseUrl}|Release>`);
+  });
+
+  it('links to a release with no body', () => {
+    const { blocks } = buildMessage({ purposes, changes: sampleChanges, release: { body: '', url: releaseUrl } });
+    expect(blocks.some((block) => block.type === 'markdown' || block.text?.type === 'mrkdwn')).toBe(false);
+    expect(blocks.at(-1).elements[0].text).toContain(`<${releaseUrl}|Release>`);
+  });
+
+  it('fits long release notes within the Slack Markdown limit', () => {
+    const { blocks } = buildMessage({ purposes, release: { body: 'x'.repeat(12001), url: releaseUrl } });
+    expect(blocks.find((block) => block.type === 'markdown').text).toBe(`${'x'.repeat(11999)}…`);
+  });
+});
+
 describe('buildProdAnnouncement', () => {
   it('names a custom final purpose in the announcement', () => {
     const { text, blocks } = buildProdAnnouncement({

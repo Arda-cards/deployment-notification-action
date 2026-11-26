@@ -17,7 +17,9 @@
 ## Actions Toolkit
 
 The actions use GitHub's `@actions/core` package to read inputs, write the `context` output, and register the Slack and
-GitHub tokens for masking in runner logs. The shared Toolkit bundle is included in the repository so workflows can run
+GitHub tokens for masking in runner logs. It also issues warning and notice annotations. The actions use
+`@actions/github` for release lookups. The shared Toolkit bundle is
+included in the repository so workflows can run
 the actions directly. When updating the dependency, run `npm ci` followed by `npm run build` and include the regenerated
 bundle and license notices under `vendor/actions-toolkit/`.
 
@@ -69,6 +71,10 @@ between message edits.
 
 ### Final deployment baseline and changes
 
+When a workflow supplies `version`, `fetchRelease` uses `@actions/github` to look up a published release with that exact
+tag. A match supplies the release body and a release link. A release with an empty body still supplies its link.
+When the version is blank, the release is missing, or the lookup fails, the action uses the commit comparison.
+
 `lastSuccessfulDeploySha` first checks the 20 most recent deployment records for the last tracked purpose. GitHub calls
 this an environment in its API. A record can exist as soon as the job is released. Its latest status must be `success`
 to qualify. The fallback checks up to 20
@@ -98,6 +104,8 @@ Status rows use colored dots, with a stop icon for
 `blocked`. The row can use a shorter label than the prose, such as “awaiting” for “awaiting approval.” Workflow run and
 comparison or commit links appear in a context footer. `buildProdAnnouncement` names the final purpose and uses the
 same single-change or grouped-range treatment and footer. The default destination is displayed as “production.”
+Release notes use a Slack Markdown block and are shortened to fit its 12,000-character limit. The footer links to the
+full release. [Slack Markdown block](https://docs.slack.dev/reference/block-kit/blocks/markdown-block/)
 
 Slack headers are capped at 150 characters. [Slack header block](https://docs.slack.dev/reference/block-kit/blocks/header-block/)
 See the [Slack section block field limits](https://docs.slack.dev/reference/block-kit/blocks/section-block/).

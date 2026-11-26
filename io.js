@@ -1,13 +1,14 @@
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { DEFAULT_FINAL_PURPOSE, parseUserMap, parsePrNumber } = require('./lib');
+const { getOctokit, notice, warning } = require('./vendor/actions-toolkit/core.cjs');
 
 const DEFAULT_BRANCH = 'main';
 
 function createLogger(title) {
   return {
-    warn: (message) => console.log(`::warning title=${title}::${message}`),
-    notice: (message) => console.log(`::notice::${message}`),
+    warn: (message) => warning(message, { title }),
+    notice,
   };
 }
 
@@ -28,6 +29,20 @@ async function githubApi(path, token, { warn = () => {}, userAgent = 'arda-deplo
     return await res.json();
   } catch (err) {
     warn(`GitHub API ${path} failed: ${err.message}`);
+    return null;
+  }
+}
+
+async function fetchRelease({ repository, version, token, warn }) {
+  const tag = version?.trim();
+  const [owner, repo] = repository?.split('/') ?? [];
+  if (!tag || !token || !owner || !repo) return null;
+
+  try {
+    const { data } = await getOctokit(token).rest.repos.getReleaseByTag({ owner, repo, tag });
+    return { body: data.body ?? '', url: data.html_url };
+  } catch (err) {
+    if (err.status !== 404) warn(`GitHub release lookup failed: ${err.message}`);
     return null;
   }
 }
@@ -142,6 +157,7 @@ module.exports = {
   DEFAULT_BRANCH,
   createLogger,
   githubApi,
+  fetchRelease,
   readUserMap,
   lastSuccessfulDeploySha,
   compareCommits,

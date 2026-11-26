@@ -5,7 +5,10 @@ const { buildSync } = require('esbuild');
 const bundlePath = 'vendor/actions-toolkit/core.cjs';
 const result = buildSync({
   stdin: {
-    contents: "export { getInput, setOutput, setSecret } from '@actions/core';",
+    contents: [
+      "export { getInput, notice, setOutput, setSecret, warning } from '@actions/core';",
+      "export { getOctokit } from '@actions/github';",
+    ].join('\n'),
     resolveDir: process.cwd(),
   },
   bundle: true,

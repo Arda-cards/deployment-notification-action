@@ -23,6 +23,8 @@ and is named when the deployment completes.
 Slack headlines include the calling repository's name, for example `arda-frontend-app live in release`.
 Set the optional `version` input to display it after the repository name, as in `arda-frontend-app v1.2.3 live in release`.
 The default is an empty string. Pass the same version to `post`, `update`, and `announce` to show it throughout a deployment.
+When `version` matches a published GitHub release tag, Slack displays its release notes in place of the commit list.
+The commit list is used when the version is blank or a matching release is unavailable.
 The optional `jobNamePattern` input controls which GitHub Actions job names the action uses for live status.
 It defaults to `deploy ($purpose)`, which matches a job named `deploy (stage)` for `stage`.
 Set `jobNamePattern: 'deploy-$purpose'` for workflows with names such as `deploy-stage`.
@@ -78,6 +80,7 @@ maps GitHub logins to Slack user IDs under a `users` key.
 ```yaml
 permissions:
   actions: read
+  contents: read
   deployments: read
   pull-requests: read
 ```

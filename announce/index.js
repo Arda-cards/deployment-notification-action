@@ -19,7 +19,8 @@ async function announce() {
     const messageArgs = await fetchMessageArgs(inputs, finalPurpose);
     const message = buildProdAnnouncement({ ...messageArgs, finalPurpose });
     await postMessage(slackToken, { channel, ...message });
-    notice(`Posted deploy announcement for ${finalPurpose} (${messageArgs.changes.length} change(s)).`);
+    const content = messageArgs.release ? 'GitHub release' : `${messageArgs.changes.length} change(s)`;
+    notice(`Posted deploy announcement for ${finalPurpose} (${content}).`);
   } catch (err) {
     warn(`Could not announce deployment: ${err.message}`);
   }

@@ -8,6 +8,7 @@ const {
 const {
   createLogger,
   githubApi,
+  fetchRelease,
   readUserMap,
   lastSuccessfulDeploySha,
   compareCommits,
@@ -78,6 +79,10 @@ async function fetchMessageArgs(inputs, finalPurpose) {
   const runUrl = runId ? `${repoUrl}/actions/runs/${runId}` : '';
   const shortSha = commitSha.slice(0, 7);
   const commitUrl = commitSha ? `${repoUrl}/commit/${commitSha}` : null;
+  const message = { repository, version, runUrl, commitUrl, shortSha, repoUrl };
+
+  const release = await fetchRelease({ repository, version, token: githubToken, warn });
+  if (release) return { ...message, release };
 
   const pr = await fetchPrForCommit({
     repository,
@@ -97,7 +102,7 @@ async function fetchMessageArgs(inputs, finalPurpose) {
   });
   const compareUrl = base ? `${repoUrl}/compare/${base.slice(0, 7)}...${shortSha}` : '';
   return {
-    repository, version, pr, mention, runUrl, commitUrl, shortSha, changes, userMap, repoUrl, compareUrl,
+    ...message, pr, mention, changes, userMap, compareUrl,
   };
 }
 

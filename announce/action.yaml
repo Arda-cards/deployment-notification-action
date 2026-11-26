@@ -10,7 +10,7 @@ inputs:
     required: false
     default: ''
   version:
-    description: 'Deployment version to display after the repository name in Slack'
+    description: 'Deployment version to display in Slack and use as the GitHub release tag'
     required: false
     default: ''
   context:
@@ -25,7 +25,9 @@ inputs:
     required: false
     default: ''
   github-token:
-    description: 'Token with pull-requests:read, actions:read, and deployments:read to look up changes and deploy history'
+    description: >-
+      Token with contents:read, pull-requests:read, actions:read, and deployments:read
+      to look up release notes, changes, and deploy history.
     required: true
   user-map-path:
     description: 'Path to the GitHub-login -> Slack-id map, relative to the repo root'
