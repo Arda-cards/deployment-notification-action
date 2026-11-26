@@ -2,7 +2,8 @@
 
 ## Entry points
 
-- [post/action.yaml](post/action.yaml) and [update/action.yaml](update/action.yaml) define the two JavaScript actions.
+- [post/action.yaml](post/action.yaml), [update/action.yaml](update/action.yaml), and [announce/action.yaml](announce/action.yaml)
+  define the three JavaScript actions.
   Their entry scripts call [notify.js](notify.js) on the runner's built-in Node.js 24 runtime. The JavaScript uses
   CommonJS and runs without a build step. The notifier reads the runner's `INPUT_*` variables, which preserve hyphens
   in input names. Running `node notify.js` directly supports environment variables such as `MODE`, `COMMIT_SHA`,
@@ -20,7 +21,7 @@ entry point can report it consistently. A missing or invalid user map behaves as
 
 The frontend deployment workflow posts after `dev` finishes. The `/post` action returns the Slack message timestamp
 and channel ID through `GITHUB_OUTPUT`. The `/update` action uses those outputs to edit the same message as the commit
-moves through the configured purposes. Its `announce` mode sends a separate announcement for the final purpose.
+moves through the configured purposes. The `/announce` action sends a separate announcement for the final purpose.
 When `commit-sha` is empty, the notifier uses `GITHUB_SHA`, which also covers manual deployment runs.
 
 ### Status resolution

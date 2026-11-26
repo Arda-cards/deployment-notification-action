@@ -190,27 +190,17 @@ async function main(mode) {
 }
 
 function runNotification(mode) {
+  if (!['post', 'update', 'announce'].includes(mode)) {
+    warn(`Unknown notification mode "${mode}" — expected "post", "update", or "announce".`);
+    return;
+  }
   return main(mode).catch((err) => {
     warn(`Deploy notification error: ${err.message}`);
   });
 }
 
-function postNotification() {
-  return runNotification('post');
-}
-
-function updateNotification(mode = 'update') {
-  if (mode !== 'update' && mode !== 'announce') {
-    warn(`Unknown update action mode "${mode}" — expected "update" or "announce".`);
-    return;
-  }
-  return runNotification(mode);
-}
-
 if (require.main === module) {
-  const mode = process.env.INPUT_MODE ?? process.env.MODE;
-  if (mode === 'post') postNotification();
-  else updateNotification(mode);
+  runNotification(process.env.INPUT_MODE ?? process.env.MODE ?? 'update');
 }
 
-module.exports = { postNotification, updateNotification };
+module.exports = { runNotification };

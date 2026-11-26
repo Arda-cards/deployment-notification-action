@@ -1,3 +1,3 @@
-const { updateNotification } = require('../notify');
+const { runNotification } = require('../notify');
 
-updateNotification(process.env.INPUT_MODE ?? process.env.MODE);
+runNotification('update');

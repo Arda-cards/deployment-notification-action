@@ -1,18 +1,19 @@
 # Deploy Slack Notify
 
-Track a commit through dev, stage, demo, and production in a single Slack message. Use `/post` to create the message and
-`/update` to edit it or send a standalone announcement. Notification errors are reported as warnings so the deploy can continue.
+Track a commit through dev, stage, demo, and production in a single Slack message. Use `/post` to create the message,
+`/update` to edit it, and `/announce` to post a standalone announcement. Notification errors are reported as warnings
+so the deploy can continue.
 
 See the [post action inputs and outputs](post/action.yaml), [update action inputs](update/action.yaml),
+[announce action inputs](announce/action.yaml),
 [release history](CHANGELOG.md), and [developer guide](DEVELOP.md).
 
 ## Usage
 
-Both actions use the GitHub Actions runner's built-in Node.js 24 runtime. Provide a Slack bot token with `chat:write`
+All three actions use the GitHub Actions runner's built-in Node.js 24 runtime. Provide a Slack bot token with `chat:write`
 and a channel the bot can post to.
 Pass the `message-ts` and `channel-id` outputs from `/post` to later `/update` steps, along with the Slack bot token and
-channel. `/update` defaults to `mode: update`. For a standalone announcement, set `mode: announce` and provide the
-destination as `slack-channel`.
+channel. Call `/announce` after the final deployment succeeds and set `slack-channel` to the announcement destination.
 
 Set `tracked-purpose` to a comma-separated list in deployment order, such as `preview, stage, prod`.
 Use the same list for `post`, `update`, and `announce`. An omitted or blank list defaults to `dev, stage, demo, prod`.
@@ -27,7 +28,7 @@ For `post` and `update`, pass `purpose` and `status` together to give one tracke
 `purpose` defaults to an empty string and `status` defaults to `pending`. The action also checks live jobs and approvals
 for the tracked purposes.
 
-The examples use `main` as the action ref. Replace it with your chosen tag or commit SHA to pin both actions.
+The examples use `main` as the action ref. Replace it with your chosen tag or commit SHA to pin the actions.
 
 ```yaml
 steps:
@@ -56,6 +57,15 @@ as job outputs and read them through `needs`.
     github-token: ${{ github.token }}
     slack-bot-token: ${{ secrets.SLACK_DEPLOY_BOT_TOKEN }}
     slack-channel: ${{ vars.SLACK_DEPLOY_CHANNEL }}
+```
+
+```yaml
+- name: Announce deployment
+  uses: Arda-cards/deployment-notification-action/announce@main
+  with:
+    github-token: ${{ github.token }}
+    slack-bot-token: ${{ secrets.SLACK_DEPLOY_BOT_TOKEN }}
+    slack-channel: ${{ vars.SLACK_PRODUCT_CHANNEL }}
 ```
 
 To mention authors in Slack, check out the calling repository before invoking the action and provide

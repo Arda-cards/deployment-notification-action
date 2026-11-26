@@ -1,0 +1,38 @@
+---
+name: 'Deploy Slack Notify Announce'
+description: >-
+  Post a standalone Slack announcement for the final deployment.
+  All failures are non-fatal.
+
+inputs:
+  commit-sha:
+    description: 'Commit being deployed; used to find the source PR and author'
+    required: false
+    default: ''
+  version:
+    description: 'Deployment version to display after the repository name in Slack'
+    required: false
+    default: ''
+  tracked-purpose:
+    description: 'Comma-separated purposes in deployment order. The last purpose sets the deployment baseline.'
+    required: false
+    default: 'dev, stage, demo, prod'
+  slack-bot-token:
+    description: 'Slack bot token with chat:write (empty = notifier no-ops)'
+    required: false
+    default: ''
+  slack-channel:
+    description: 'Slack channel id/name to post the announcement to (empty = notifier no-ops)'
+    required: false
+    default: ''
+  github-token:
+    description: 'Token with pull-requests:read, actions:read, and deployments:read to look up changes and deploy history'
+    required: true
+  user-map-path:
+    description: 'Path to the GitHub-login -> Slack-id map, relative to the repo root'
+    required: false
+    default: '.github/deploy-notify/user-map.json'
+
+runs:
+  using: 'node24'
+  main: 'index.js'

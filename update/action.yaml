@@ -1,14 +1,8 @@
 ---
 name: 'Deploy Slack Notify Update'
-description: >-
-  Update an existing Slack deployment message or post an announcement for
-  the final deployment. All failures are non-fatal.
+description: 'Update an existing Slack deployment message. All failures are non-fatal.'
 
 inputs:
-  mode:
-    description: 'Use update to edit the status message or announce to post a standalone announcement'
-    required: false
-    default: 'update'
   commit-sha:
     description: 'Commit being deployed; used to find the source PR and author'
     required: false
@@ -26,19 +20,19 @@ inputs:
     required: false
     default: 'deploy ($purpose)'
   purpose:
-    description: 'Tracked deployment purpose that the status hint applies to in update mode'
+    description: 'Tracked deployment purpose that the status hint applies to'
     required: false
     default: ''
   status:
-    description: 'Status hint for the specified purpose (a job result, or in_progress/pending) in update mode'
+    description: 'Status hint for the specified purpose (a job result, or in_progress/pending)'
     required: false
     default: 'pending'
   message-ts:
-    description: 'Slack message ts returned by the post action, used in update mode'
+    description: 'Slack message ts returned by the post action'
     required: false
     default: ''
   channel-id:
-    description: 'Slack channel id returned by the post action, used in update mode'
+    description: 'Slack channel id returned by the post action'
     required: false
     default: ''
   slack-bot-token:
@@ -46,7 +40,7 @@ inputs:
     required: false
     default: ''
   slack-channel:
-    description: 'Slack channel id/name (empty = notifier no-ops). In announce mode, the channel to post to.'
+    description: 'Slack channel id/name configured for the post action (empty = notifier no-ops)'
     required: false
     default: ''
   github-token:

@@ -1,3 +1,3 @@
-const { postNotification } = require('../notify');
+const { runNotification } = require('../notify');
 
-postNotification();
+runNotification('post');
