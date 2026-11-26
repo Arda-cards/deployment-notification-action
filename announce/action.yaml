@@ -6,10 +6,14 @@ description: >-
 
 inputs:
   context:
-    description: 'JSON context from the post action, including deployment settings and the Slack channel'
+    description: 'JSON context from the post action, including the tracked purposes and version'
     required: true
   slack-bot-token:
     description: 'Slack bot token with chat:write (empty = notifier no-ops)'
+    required: false
+    default: ''
+  slack-channel:
+    description: 'Slack announcement destination. An empty value skips the announcement and emits a workflow notice.'
     required: false
     default: ''
   github-token:

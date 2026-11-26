@@ -34,9 +34,9 @@ entry point can report it consistently. A missing or invalid user map behaves as
 The frontend deployment workflow posts after `dev` finishes. The `/post` action writes a single `context` output to
 `GITHUB_OUTPUT` with the actual Slack `channel_id`, the `message_ts`, the ordered `tracked_purposes` array, `version`,
 `jobNamePattern`, `user-map-path`, and the configured `slack-channel`.
-`/update` uses the resolved `channel_id` to edit the existing message and keeps its purpose order. `/announce` uses the
-last purpose and the stored `slack-channel`. For older contexts, `/announce` uses `channel_id` as its destination.
-Missing or malformed context produces a warning and skips the notification.
+`/update` uses the resolved `channel_id` to edit the existing message and keeps its purpose order. `/announce` posts
+to its `slack-channel` input. An omitted or blank channel emits a workflow notice and skips the announcement before
+loading the context. Missing or malformed context produces a warning when an action needs it to send a notification.
 Both consumers use the context version for Slack titles and release lookups and read the stored user map path.
 `/update` uses the stored job name pattern for live status lookup. A context missing these fields uses an empty version,
 the `deploy ($purpose)` job pattern, and `.github/deploy-notify/user-map.json`.

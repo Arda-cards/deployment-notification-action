@@ -11,7 +11,9 @@ See the [post action inputs and outputs](post/action.yaml), [update action input
 ## Usage
 
 All three actions use the GitHub Actions runner's built-in Node.js 24 runtime and a Slack bot token with `chat:write`.
-Set `slack-channel` on `/post`. Both `/update` and `/announce` use the channel from the resulting context.
+Set `slack-channel` on `/post`. `/update` uses the resolved channel from the resulting context.
+Set `slack-channel` on `/announce` to send the announcement. It defaults to an empty string, which skips the
+announcement and emits a workflow notice.
 
 Pass the `context` output from `/post` directly to `/update` and `/announce`. It is a JSON string containing
 `channel_id`, `message_ts`, the ordered `tracked_purposes` array, `version`, `jobNamePattern`, `user-map-path`, and
@@ -73,6 +75,7 @@ as a job output and read it through `needs`.
     context: ${{ steps.notify.outputs.context }}
     github-token: ${{ github.token }}
     slack-bot-token: ${{ secrets.SLACK_DEPLOY_BOT_TOKEN }}
+    slack-channel: ${{ vars.SLACK_PRODUCT_CHANNEL }}
 ```
 
 To mention authors in Slack, check out the calling repository before invoking the action and provide

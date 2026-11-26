@@ -1,4 +1,4 @@
-const { readNotificationContext, readSharedInputs } = require('../context');
+const { readInput, readNotificationContext, readSharedInputs } = require('../context');
 const { buildProdAnnouncement } = require('../lib');
 const { fetchMessageArgs, notice, warn } = require('../notify');
 const { postMessage } = require('../slack');
@@ -12,9 +12,15 @@ function readAnnounceInputs() {
 
 async function announce() {
   try {
+    const channel = readInput('slack-channel').trim();
+    if (!channel) {
+      notice('slack-channel is empty. Skipping deploy announcement.');
+      return;
+    }
+
     const inputs = readAnnounceInputs();
     const { context, slackToken } = inputs;
-    const { version, 'user-map-path': userMapPath, 'slack-channel': channel } = context;
+    const { version, 'user-map-path': userMapPath } = context;
     const finalPurpose = context.tracked_purposes.at(-1);
     const messageArgs = await fetchMessageArgs({ ...inputs, version, userMapPath }, finalPurpose);
     const message = buildProdAnnouncement({ ...messageArgs, finalPurpose });
