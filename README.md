@@ -1,18 +1,18 @@
 # Deploy Slack Notify
 
-Track a commit through dev, stage, demo, and production in a single Slack message. Use `post` to create the status message,
-`update` to edit it, and `announce` to send a standalone announcement for the final deployment. Notification errors are reported as
-warnings so the deploy can continue.
+Track a commit through dev, stage, demo, and production in a single Slack message. Use `/post` to create the message and
+`/update` to edit it or send a standalone announcement. Notification errors are reported as warnings so the deploy can continue.
 
-See [action.yaml](action.yaml) for inputs and outputs and [CHANGELOG.md](CHANGELOG.md) for release history.
-See [DEVELOP.md](DEVELOP.md) for implementation details and local verification.
+See the [post action inputs and outputs](post/action.yaml), [update action inputs](update/action.yaml),
+[release history](CHANGELOG.md), and [developer guide](DEVELOP.md).
 
 ## Usage
 
-The action uses the GitHub Actions runner's built-in Node.js 24 runtime. Provide a Slack bot token with `chat:write`
+Both actions use the GitHub Actions runner's built-in Node.js 24 runtime. Provide a Slack bot token with `chat:write`
 and a channel the bot can post to.
-Pass the `message-ts` and `channel-id` outputs from `post` to later `update` steps, along with the Slack bot token and
-channel. Use `announce` with the channel that should receive the final deployment announcement.
+Pass the `message-ts` and `channel-id` outputs from `/post` to later `/update` steps, along with the Slack bot token and
+channel. `/update` defaults to `mode: update`. For a standalone announcement, set `mode: announce` and provide the
+destination as `slack-channel`.
 
 Set `tracked-purpose` to a comma-separated list in deployment order, such as `preview, stage, prod`.
 Use the same list for `post`, `update`, and `announce`. An omitted or blank list defaults to `dev, stage, demo, prod`.
@@ -27,20 +27,35 @@ For `post` and `update`, pass `purpose` and `status` together to give one tracke
 `purpose` defaults to an empty string and `status` defaults to `pending`. The action also checks live jobs and approvals
 for the tracked purposes.
 
-The example uses `main` as the action ref. Replace it with your chosen tag or commit SHA to pin the action.
+The examples use `main` as the action ref. Replace it with your chosen tag or commit SHA to pin both actions.
 
 ```yaml
 steps:
   - name: Post deployment status
     id: notify
-    uses: Arda-cards/deployment-notification-action@main
+    uses: Arda-cards/deployment-notification-action/post@main
     with:
-      mode: post
       purpose: stage
       status: in_progress
       github-token: ${{ github.token }}
       slack-bot-token: ${{ secrets.SLACK_DEPLOY_BOT_TOKEN }}
       slack-channel: ${{ vars.SLACK_DEPLOY_CHANNEL }}
+```
+
+Use the output expressions below in a later step of the same job. For a separate job, expose the post step's outputs
+as job outputs and read them through `needs`.
+
+```yaml
+- name: Update deployment status
+  uses: Arda-cards/deployment-notification-action/update@main
+  with:
+    purpose: stage
+    status: success
+    message-ts: ${{ steps.notify.outputs.message-ts }}
+    channel-id: ${{ steps.notify.outputs.channel-id }}
+    github-token: ${{ github.token }}
+    slack-bot-token: ${{ secrets.SLACK_DEPLOY_BOT_TOKEN }}
+    slack-channel: ${{ vars.SLACK_DEPLOY_CHANNEL }}
 ```
 
 To mention authors in Slack, check out the calling repository before invoking the action and provide

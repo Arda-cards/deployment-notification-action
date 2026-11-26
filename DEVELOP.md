@@ -2,24 +2,25 @@
 
 ## Entry points
 
-- [action.yaml](action.yaml) defines the workflow inputs and outputs and runs [notify.js](notify.js) on GitHub Actions'
-  built-in Node.js 24 runtime. The JavaScript uses CommonJS and runs without a build step. The notifier reads the
-  runner's `INPUT_*` variables, which preserve hyphens in input names. Direct invocations can use the original
-  environment variables such as `MODE`, `COMMIT_SHA`, `PURPOSE`, and `STATUS`.
+- [post/action.yaml](post/action.yaml) and [update/action.yaml](update/action.yaml) define the two JavaScript actions.
+  Their entry scripts call [notify.js](notify.js) on the runner's built-in Node.js 24 runtime. The JavaScript uses
+  CommonJS and runs without a build step. The notifier reads the runner's `INPUT_*` variables, which preserve hyphens
+  in input names. Running `node notify.js` directly supports environment variables such as `MODE`, `COMMIT_SHA`,
+  `PURPOSE`, and `STATUS`.
 - [undeployed-digest.js](undeployed-digest.js) is a separate entry point for a scheduled workflow. It posts one message
   about commits on `main` that have yet to reach the final purpose.
 - [io.js](io.js) shares GitHub, Slack, filesystem, and workflow-command I/O between the entry points. [lib.js](lib.js)
   holds the pure status, filtering, and rendering helpers exercised by Jest.
 
-Both entry points catch runtime errors, emit a warning with the script's title, and exit successfully. `githubApi`
+The entry points catch runtime errors, emit a warning with the script's title, and exit successfully. `githubApi`
 returns `null` after warning about an HTTP or network failure. `slackCall` throws when Slack reports an error so the
 entry point can report it consistently. A missing or invalid user map behaves as an empty map.
 
 ## Deployment notification
 
-In the frontend deployment workflow, `post` runs after `dev` finishes and returns the Slack message timestamp and
-channel ID through `GITHUB_OUTPUT`. Calls to `update` use those outputs to edit the same message as the commit moves through
-the configured purposes. The `announce` call sends a separate announcement for the final purpose.
+The frontend deployment workflow posts after `dev` finishes. The `/post` action returns the Slack message timestamp
+and channel ID through `GITHUB_OUTPUT`. The `/update` action uses those outputs to edit the same message as the commit
+moves through the configured purposes. Its `announce` mode sends a separate announcement for the final purpose.
 When `commit-sha` is empty, the notifier uses `GITHUB_SHA`, which also covers manual deployment runs.
 
 ### Status resolution

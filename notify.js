@@ -80,10 +80,9 @@ async function fetchDeployChanges({ repository, workflowFile, finalPurpose, comm
   return { changes, base };
 }
 
-async function main() {
+async function main(mode) {
   const env = process.env;
   const {
-    INPUT_MODE: mode = env.MODE ?? 'update',
     INPUT_VERSION: version,
     INPUT_JOBNAMEPATTERN: jobNamePattern,
     INPUT_PURPOSE: inputPurpose = env.PURPOSE ?? '',
@@ -177,24 +176,41 @@ async function main() {
     return;
   }
 
-  if (mode === 'update') {
-    if (!messageTs || !channelId) {
-      warn('No message ts/channel from the post step — nothing to update.');
-      return;
-    }
-    await slackCall('chat.update', slackToken, {
-      channel: channelId,
-      ts: messageTs,
-      text,
-      blocks,
-    });
-    notice(`Updated deploy status message: ${statusSummary}`);
+  if (!messageTs || !channelId) {
+    warn('No message ts/channel from the post step — nothing to update.');
     return;
   }
-
-  warn(`Unknown MODE "${mode}" — expected "post", "update", or "announce".`);
+  await slackCall('chat.update', slackToken, {
+    channel: channelId,
+    ts: messageTs,
+    text,
+    blocks,
+  });
+  notice(`Updated deploy status message: ${statusSummary}`);
 }
 
-main().catch((err) => {
-  warn(`Deploy notification error: ${err.message}`);
-});
+function runNotification(mode) {
+  return main(mode).catch((err) => {
+    warn(`Deploy notification error: ${err.message}`);
+  });
+}
+
+function postNotification() {
+  return runNotification('post');
+}
+
+function updateNotification(mode = 'update') {
+  if (mode !== 'update' && mode !== 'announce') {
+    warn(`Unknown update action mode "${mode}" — expected "update" or "announce".`);
+    return;
+  }
+  return runNotification(mode);
+}
+
+if (require.main === module) {
+  const mode = process.env.INPUT_MODE ?? process.env.MODE;
+  if (mode === 'post') postNotification();
+  else updateNotification(mode);
+}
+
+module.exports = { postNotification, updateNotification };

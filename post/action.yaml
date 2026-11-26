@@ -1,16 +1,10 @@
 ---
-name: 'Deploy Slack Notify'
+name: 'Deploy Slack Notify Post'
 description: >-
-  Post and update a single Slack message that tracks one commit as it moves
-  through the deployment purposes (dev → stage → demo → prod by default), or send
-  the wider product channel an announcement for the final deployment. All failures are non-fatal.
+  Post a Slack message to track a commit through its deployment purposes.
+  All failures are non-fatal.
 
 inputs:
-  mode:
-    description: >-
-      "post" to create the per-commit status message, "update" to edit it,
-      "announce" to post a standalone message about the final deployment.
-    required: true
   commit-sha:
     description: 'Commit being deployed; used to find the source PR and author'
     required: false
@@ -28,21 +22,13 @@ inputs:
     required: false
     default: 'deploy ($purpose)'
   purpose:
-    description: 'Tracked deployment purpose that the status hint applies to — for post/update'
+    description: 'Tracked deployment purpose that the status hint applies to'
     required: false
     default: ''
   status:
-    description: 'Status hint for the specified purpose (a job result, or in_progress/pending) — for post/update'
+    description: 'Status hint for the specified purpose (a job result, or in_progress/pending)'
     required: false
     default: 'pending'
-  message-ts:
-    description: 'Slack message ts to update (update mode); output of the post mode'
-    required: false
-    default: ''
-  channel-id:
-    description: 'Slack channel id returned by the post mode (update mode)'
-    required: false
-    default: ''
   slack-bot-token:
     description: 'Slack bot token with chat:write (empty = notifier no-ops)'
     required: false
@@ -64,10 +50,10 @@ inputs:
 
 outputs:
   message-ts:
-    description: 'Slack ts of the posted message (post mode)'
+    description: 'Slack ts of the posted message'
   channel-id:
-    description: 'Resolved Slack channel id of the posted message (post mode)'
+    description: 'Resolved Slack channel id of the posted message'
 
 runs:
   using: 'node24'
-  main: 'notify.js'
+  main: 'index.js'
