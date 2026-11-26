@@ -114,7 +114,7 @@ describe('renderClockTime', () => {
     expect(renderClockTime('2026-08-03T19:43:04Z')).toBe('<!date^1785786184^{time}|19:43 UTC>');
   });
 
-  it('is empty for a missing or unparseable timestamp', () => {
+  it('is empty for a missing or unparsable timestamp', () => {
     expect(renderClockTime(null)).toBe('');
     expect(renderClockTime('never')).toBe('');
   });

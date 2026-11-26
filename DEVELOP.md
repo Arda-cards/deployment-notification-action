@@ -36,8 +36,7 @@ trims names, lowercases them, ignores blanks, and keeps the first occurrence of 
 upstream dependency prevented it from running. Empty and unrecognized values map to `pending`.
 `resolvePurposeStatuses` applies these sources in order:
 
-1. A terminal workflow hint from `needs.<job>.result`. Terminal statuses are `success`, `failure`, `blocked`, and
-   `cancelled`.
+1. A terminal workflow hint from `needs.<job>.result`. Terminal statuses are `success`, `failure`, `blocked`, and `cancelled`.
 2. The conclusion of a completed job in the live run.
 3. The run's pending deployment approvals, which set `awaiting`.
 4. A live job in progress, which sets `in_progress`.
@@ -45,7 +44,7 @@ upstream dependency prevented it from running. Empty and unrecognized values map
 
 `runJobs` and `awaitingApprovalPurposes` require `actions: read`. They return empty lists on failure. `indexPurposeJobs`
 substitutes each tracked purpose for `$purpose` in `jobNamePattern`. It matches job names case-insensitively,
-including names followed by a reusable workflow suffix such as ` / Apply`. A pattern without `$purpose` matches
+including reusable workflow names such as `deploy (stage) / Apply`. A pattern without `$purpose` matches
 no jobs. The index keeps the first match because a rerun can include the original job in the list.
 Each resolved purpose carries its name, status, nullable `createdAt`, `startedAt`, and `completedAt` timestamps, and
 a `source` of `hint`, `job`, or `approval`. The notifier checks the live run up to five times, three seconds apart, while
@@ -64,8 +63,8 @@ between message edits.
 `lastSuccessfulDeploySha` first checks the 20 most recent deployment records for the last tracked purpose. GitHub calls
 this an environment in its API. A record can exist as soon as the job is released. Its latest status must be `success`
 to qualify. The fallback checks up to 20
-successful runs of `DEPLOY_WORKFLOW` (`deploy.yaml` by default) and matches the branch locally because combining the
-API's branch and success filters has returned stale results. This fallback assumes the workflow reaches success only
+successful runs of `DEPLOY_WORKFLOW` (`deploy.yaml` by default) and matches the branch locally because applying both
+the branch and success filters in the GitHub API has returned stale results. The fallback assumes the workflow succeeds only
 after the final purpose has deployed. Both lookups return `null` when they find no qualifying SHA.
 
 The notifier excludes both the commit being built and the run's `GITHUB_SHA` from the baseline lookup. In a
@@ -119,7 +118,7 @@ numeric minute and hour and converts that UTC time on the current UTC date into 
 cron time even if the runner starts late. The defaults are `TARGET_HOUR=9` and `TARGET_TZ=America/Los_Angeles`. For
 example, `16:30 UTC` falls in the target hour during daylight saving time and `17:30 UTC` does so during standard time.
 The time conversion normalizes ICU's `24` representation of midnight to `0`. A manual `workflow_dispatch` or an
-unparseable schedule allows the digest to run.
+unparsable schedule allows the digest to run.
 
 ## Verification
 
