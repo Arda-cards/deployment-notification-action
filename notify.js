@@ -1,16 +1,12 @@
-const { appendFileSync } = require('node:fs');
 const {
   resolveMention,
   buildDeployMessage,
-  buildProdAnnouncement,
   resolvePurposeStatuses,
   indexPurposeJobs,
   isAutomatedCommit,
-  parseTrackedPurposes,
 } = require('./lib');
 const {
   createLogger,
-  slackCall,
   githubApi,
   readUserMap,
   lastSuccessfulDeploySha,
@@ -25,34 +21,6 @@ const CONFIRM_ATTEMPTS = 5;
 const CONFIRM_DELAY_MS = 3000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function setOutput(name, value) {
-  const file = process.env.GITHUB_OUTPUT;
-  if (!file) return;
-  appendFileSync(file, `${name}=${value}\n`);
-}
-
-function validateNotificationContext(context) {
-  const { channel_id, message_ts, tracked_purposes } = context ?? {};
-  if (typeof channel_id !== 'string' || !channel_id.trim() ||
-      typeof message_ts !== 'string' || !message_ts.trim() ||
-      !Array.isArray(tracked_purposes) || !tracked_purposes.length ||
-      !tracked_purposes.every((purpose) => typeof purpose === 'string' && purpose.trim())) {
-    throw new Error('context must include a channel_id, message_ts, and a non-empty tracked_purposes array.');
-  }
-  return { channel_id, message_ts, tracked_purposes };
-}
-
-function readNotificationContext(input) {
-  if (!input.trim()) throw new Error('No context was provided from the post action.');
-  let context;
-  try {
-    context = JSON.parse(input);
-  } catch {
-    throw new Error('context must be valid JSON from the post action.');
-  }
-  return validateNotificationContext(context);
-}
 
 async function fetchPrForCommit({ repository, sha, token }) {
   if (!sha) return null;
@@ -102,39 +70,10 @@ async function fetchDeployChanges({ repository, workflowFile, finalPurpose, comm
   return { changes, base };
 }
 
-async function main(mode) {
-  const env = process.env;
+async function fetchMessageArgs(inputs, finalPurpose) {
   const {
-    INPUT_VERSION: version,
-    INPUT_JOBNAMEPATTERN: jobNamePattern,
-    INPUT_PURPOSE: inputPurpose = env.PURPOSE ?? '',
-    INPUT_STATUS: status = env.STATUS ?? 'pending',
-    INPUT_CONTEXT: inputContext = env.CONTEXT ?? '',
-    'INPUT_COMMIT-SHA': inputSha = env.COMMIT_SHA ?? '',
-    'INPUT_SLACK-BOT-TOKEN': slackToken = env.SLACK_BOT_TOKEN,
-    'INPUT_SLACK-CHANNEL': slackChannel = env.SLACK_CHANNEL,
-    'INPUT_GITHUB-TOKEN': githubToken = env.GITHUB_TOKEN,
-    'INPUT_USER-MAP-PATH': userMapPath = env.USER_MAP_PATH ?? '.github/deploy-notify/user-map.json',
-    DEPLOY_WORKFLOW = 'deploy.yaml',
-    GITHUB_REPOSITORY: repository = env.REPOSITORY,
-    GITHUB_SERVER_URL: serverUrl = env.SERVER_URL ?? 'https://github.com',
-    GITHUB_RUN_ID: runId = env.RUN_ID ?? '',
-    GITHUB_WORKSPACE = process.cwd(),
-  } = env;
-
-  if (!slackToken) {
-    warn('slack-bot-token is required — skipping deploy notification.');
-    return;
-  }
-  if (mode !== 'update' && !slackChannel) {
-    warn('slack-channel is required — skipping deploy notification.');
-    return;
-  }
-
-  const context = mode === 'post' ? null : readNotificationContext(inputContext);
-  const names = context?.tracked_purposes ?? parseTrackedPurposes(env['INPUT_TRACKED-PURPOSE'] ?? env.TRACKED_PURPOSES);
-  const finalPurpose = names.at(-1);
-  const commitSha = inputSha || env.GITHUB_SHA || '';
+    repository, version, serverUrl, runId, workspace, userMapPath, commitSha, workflowFile, runSha, githubToken,
+  } = inputs;
   const repoUrl = `${serverUrl}/${repository}`;
   const runUrl = runId ? `${repoUrl}/actions/runs/${runId}` : '';
   const shortSha = commitSha.slice(0, 7);
@@ -145,35 +84,26 @@ async function main(mode) {
     sha: commitSha,
     token: githubToken,
   });
-  const userMap = readUserMap(GITHUB_WORKSPACE, userMapPath);
+  const userMap = readUserMap(workspace, userMapPath);
   const mention = resolveMention(userMap, pr?.author);
 
   const { changes, base } = await fetchDeployChanges({
     repository,
-    workflowFile: DEPLOY_WORKFLOW,
+    workflowFile,
     finalPurpose,
     commitSha,
-    runSha: env.GITHUB_SHA,
+    runSha,
     token: githubToken,
   });
   const compareUrl = base ? `${repoUrl}/compare/${base.slice(0, 7)}...${shortSha}` : '';
-  const messageArgs = {
+  return {
     repository, version, pr, mention, runUrl, commitUrl, shortSha, changes, userMap, repoUrl, compareUrl,
   };
+}
 
-  if (mode === 'announce') {
-    const { text, blocks } = buildProdAnnouncement({ ...messageArgs, finalPurpose });
-    await slackCall('chat.postMessage', slackToken, {
-      channel: slackChannel,
-      text,
-      blocks,
-      unfurl_links: false,
-      unfurl_media: false,
-    });
-    notice(`Posted deploy announcement for ${finalPurpose} (${changes.length} change(s)).`);
-    return;
-  }
-
+async function fetchStatusMessage(inputs, names) {
+  const { repository, runId, githubToken, inputPurpose, status, jobNamePattern } = inputs;
+  const messageArgs = await fetchMessageArgs(inputs, names.at(-1));
   const purpose = inputPurpose.trim().toLowerCase();
   const purposes = await fetchPurposes({
     repository,
@@ -183,48 +113,14 @@ async function main(mode) {
     hints: purpose && status ? { [purpose]: status } : {},
     jobNamePattern,
   });
-  const { text, blocks } = buildDeployMessage({ ...messageArgs, purposes });
-  const statusSummary = purposes.map((purpose) => `${purpose.name}=${purpose.status}`).join(' ');
-
-  if (mode === 'post') {
-    const res = await slackCall('chat.postMessage', slackToken, {
-      channel: slackChannel,
-      text,
-      blocks,
-      unfurl_links: false,
-      unfurl_media: false,
-    });
-    const postedContext = validateNotificationContext({
-      channel_id: res.channel,
-      message_ts: res.ts,
-      tracked_purposes: names,
-    });
-    setOutput('context', JSON.stringify(postedContext));
-    notice(`Posted deploy status message (ts=${res.ts}): ${statusSummary}`);
-    return;
-  }
-
-  await slackCall('chat.update', slackToken, {
-    channel: context.channel_id,
-    ts: context.message_ts,
-    text,
-    blocks,
-  });
-  notice(`Updated deploy status message: ${statusSummary}`);
+  const message = buildDeployMessage({ ...messageArgs, purposes });
+  const summary = purposes.map((purpose) => `${purpose.name}=${purpose.status}`).join(' ');
+  return { message, summary };
 }
 
-function runNotification(mode) {
-  if (!['post', 'update', 'announce'].includes(mode)) {
-    warn(`Unknown notification mode "${mode}" — expected "post", "update", or "announce".`);
-    return;
-  }
-  return main(mode).catch((err) => {
-    warn(`Deploy notification error: ${err.message}`);
-  });
-}
-
-if (require.main === module) {
-  runNotification(process.env.INPUT_MODE ?? process.env.MODE ?? 'update');
-}
-
-module.exports = { runNotification };
+module.exports = {
+  fetchMessageArgs,
+  fetchStatusMessage,
+  notice,
+  warn,
+};

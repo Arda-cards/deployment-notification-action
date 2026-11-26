@@ -4,17 +4,18 @@
 
 - [post/action.yaml](post/action.yaml), [update/action.yaml](update/action.yaml), and [announce/action.yaml](announce/action.yaml)
   define the three JavaScript actions.
-  Their entry scripts call [notify.js](notify.js) on the runner's built-in Node.js 24 runtime. The JavaScript uses
-  CommonJS and runs without a build step. The notifier reads the runner's `INPUT_*` variables, which preserve hyphens
-  in input names. Running `node notify.js` directly supports environment variables such as `MODE`, `COMMIT_SHA`,
-  `PURPOSE`, `STATUS`, and `CONTEXT`.
+  Each handler lives in its own `index.js` and reads the inputs it uses. Shared input names and context validation,
+  reading, and writing live in [context.js](context.js). Message preparation lives in [notify.js](notify.js).
+  The actions use CommonJS and run on the runner's built-in Node.js 24 runtime without a build step. The runner's
+  `INPUT_*` variables preserve hyphens in input names. For local verification, run `node post/index.js`,
+  `node update/index.js`, or `node announce/index.js` with mocked APIs and the inputs for that action.
 - [undeployed-digest.js](undeployed-digest.js) is a separate entry point for a scheduled workflow. It posts one message
   about commits on `main` that have yet to reach the final purpose.
-- [io.js](io.js) shares GitHub, Slack, filesystem, and workflow-command I/O between the entry points. [lib.js](lib.js)
-  holds the pure status, filtering, and rendering helpers exercised by Jest.
+- [slack.js](slack.js) handles posting and updating Slack messages for the three actions and the digest. [io.js](io.js)
+  handles GitHub, filesystem, and workflow-command I/O. [lib.js](lib.js) holds the pure helpers exercised by Jest.
 
-The entry points catch runtime errors, emit a warning with the script's title, and exit successfully. `githubApi`
-returns `null` after warning about an HTTP or network failure. `slackCall` throws when Slack reports an error so the
+Each entry point catches runtime errors, emits a warning that names the failed operation, and exits successfully. `githubApi`
+returns `null` after warning about an HTTP or network failure. The Slack helpers throw when Slack reports an error so the
 entry point can report it consistently. A missing or invalid user map behaves as an empty map.
 
 ## Deployment notification

@@ -11,22 +11,6 @@ function createLogger(title) {
   };
 }
 
-async function slackCall(method, token, body) {
-  const res = await fetch(`https://slack.com/api/${method}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!data.ok) {
-    throw new Error(`Slack ${method} error: ${data.error || res.status}`);
-  }
-  return data;
-}
-
 async function githubApi(path, token, { warn = () => {}, userAgent = 'arda-deploy-notify' } = {}) {
   try {
     const res = await fetch(`https://api.github.com${path}`, {
@@ -157,7 +141,6 @@ async function awaitingApprovalPurposes({ repository, runId, token, warn = () =>
 module.exports = {
   DEFAULT_BRANCH,
   createLogger,
-  slackCall,
   githubApi,
   readUserMap,
   lastSuccessfulDeploySha,

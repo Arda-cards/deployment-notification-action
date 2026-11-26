@@ -8,11 +8,11 @@ const {
 const {
   DEFAULT_BRANCH,
   createLogger,
-  slackCall,
   readUserMap,
   lastSuccessfulDeploySha,
   compareCommits,
 } = require('./io');
+const { postMessage } = require('./slack');
 
 const { warn, notice } = createLogger('undeployed-digest');
 
@@ -95,12 +95,7 @@ async function main() {
     deployedShaShort: shortBase,
   });
 
-  await slackCall('chat.postMessage', SLACK_BOT_TOKEN, {
-    channel: SLACK_CHANNEL,
-    text,
-    unfurl_links: false,
-    unfurl_media: false,
-  });
+  await postMessage(SLACK_BOT_TOKEN, { channel: SLACK_CHANNEL, text });
   notice(`Posted undeployed digest: ${undeployed.length} commit(s) from ${groups.length} author(s).`);
 }
 
