@@ -14,6 +14,15 @@
 - [slack.js](slack.js) handles posting and updating Slack messages for the three actions and the digest. [io.js](io.js)
   handles GitHub, filesystem, and workflow-command I/O. [lib.js](lib.js) holds the pure helpers exercised by Jest.
 
+## Actions Toolkit
+
+The actions use GitHub's `@actions/core` package to read inputs, write the `context` output, and register the Slack and
+GitHub tokens for masking in runner logs. The shared Toolkit bundle is included in the repository so workflows can run
+the actions directly. When updating the dependency, run `npm ci` followed by `npm run build` and include the regenerated
+bundle and license notices under `vendor/actions-toolkit/`.
+
+## Error handling
+
 Each entry point catches runtime errors, emits a warning that names the failed operation, and exits successfully. `githubApi`
 returns `null` after warning about an HTTP or network failure. The Slack helpers throw when Slack reports an error so the
 entry point can report it consistently. A missing or invalid user map behaves as an empty map.

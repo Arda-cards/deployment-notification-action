@@ -3,17 +3,17 @@ const { buildProdAnnouncement } = require('../lib');
 const { fetchMessageArgs, notice, warn } = require('../notify');
 const { postMessage } = require('../slack');
 
-function readAnnounceInputs(env) {
+function readAnnounceInputs() {
   return {
-    ...readSharedInputs(env),
-    channel: readSlackChannel(env),
-    context: readNotificationContext(env),
+    ...readSharedInputs(),
+    channel: readSlackChannel(),
+    context: readNotificationContext(),
   };
 }
 
 async function announce() {
   try {
-    const inputs = readAnnounceInputs(process.env);
+    const inputs = readAnnounceInputs();
     const { channel, context, slackToken } = inputs;
     const finalPurpose = context.tracked_purposes.at(-1);
     const messageArgs = await fetchMessageArgs(inputs, finalPurpose);

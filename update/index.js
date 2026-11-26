@@ -2,17 +2,17 @@ const { readNotificationContext, readSharedInputs, readStatusInputs } = require(
 const { fetchStatusMessage, notice, warn } = require('../notify');
 const { updateMessage } = require('../slack');
 
-function readUpdateInputs(env) {
+function readUpdateInputs() {
   return {
-    ...readSharedInputs(env),
-    ...readStatusInputs(env),
-    context: readNotificationContext(env),
+    ...readSharedInputs(),
+    ...readStatusInputs(),
+    context: readNotificationContext(),
   };
 }
 
 async function update() {
   try {
-    const inputs = readUpdateInputs(process.env);
+    const inputs = readUpdateInputs();
     const { context, slackToken } = inputs;
     const { message, summary } = await fetchStatusMessage(inputs, context.tracked_purposes);
     await updateMessage(slackToken, {
