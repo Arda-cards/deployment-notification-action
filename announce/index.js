@@ -1,4 +1,4 @@
-const { readNotificationContext, readSharedInputs, readSlackChannel } = require('../context');
+const { readNotificationContext, readSharedInputs } = require('../context');
 const { buildProdAnnouncement } = require('../lib');
 const { fetchMessageArgs, notice, warn } = require('../notify');
 const { postMessage } = require('../slack');
@@ -6,7 +6,6 @@ const { postMessage } = require('../slack');
 function readAnnounceInputs() {
   return {
     ...readSharedInputs(),
-    channel: readSlackChannel(),
     context: readNotificationContext(),
   };
 }
@@ -14,9 +13,10 @@ function readAnnounceInputs() {
 async function announce() {
   try {
     const inputs = readAnnounceInputs();
-    const { channel, context, slackToken } = inputs;
+    const { context, slackToken } = inputs;
+    const { version, 'user-map-path': userMapPath, 'slack-channel': channel } = context;
     const finalPurpose = context.tracked_purposes.at(-1);
-    const messageArgs = await fetchMessageArgs(inputs, finalPurpose);
+    const messageArgs = await fetchMessageArgs({ ...inputs, version, userMapPath }, finalPurpose);
     const message = buildProdAnnouncement({ ...messageArgs, finalPurpose });
     await postMessage(slackToken, { channel, ...message });
     const content = messageArgs.release ? 'GitHub release' : `${messageArgs.changes.length} change(s)`;

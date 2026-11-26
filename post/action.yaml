@@ -5,10 +5,6 @@ description: >-
   All failures are non-fatal.
 
 inputs:
-  commit-sha:
-    description: 'Commit being deployed; used to find the source PR and author'
-    required: false
-    default: ''
   version:
     description: 'Deployment version to display in Slack and use as the GitHub release tag'
     required: false
@@ -49,7 +45,7 @@ inputs:
 
 outputs:
   context:
-    description: 'JSON with channel_id, message_ts, and the ordered tracked_purposes array'
+    description: 'JSON with message IDs, tracked_purposes, version, jobNamePattern, user-map-path, and slack-channel'
 
 runs:
   using: 'node24'

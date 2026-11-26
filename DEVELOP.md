@@ -32,11 +32,16 @@ entry point can report it consistently. A missing or invalid user map behaves as
 ## Deployment notification
 
 The frontend deployment workflow posts after `dev` finishes. The `/post` action writes a single `context` output to
-`GITHUB_OUTPUT` with the actual Slack `channel_id`, the `message_ts`, and the ordered `tracked_purposes` array.
-`/update` uses the context to edit the existing message and keep its purpose order. `/announce` uses the last purpose
-from the context and posts to its own `slack-channel`. Missing or malformed context produces a warning and skips the
-notification.
-When `commit-sha` is empty, the notifier uses `GITHUB_SHA`, which also covers manual deployment runs.
+`GITHUB_OUTPUT` with the actual Slack `channel_id`, the `message_ts`, the ordered `tracked_purposes` array, `version`,
+`jobNamePattern`, `user-map-path`, and the configured `slack-channel`.
+`/update` uses the resolved `channel_id` to edit the existing message and keeps its purpose order. `/announce` uses the
+last purpose and the stored `slack-channel`. For older contexts, `/announce` uses `channel_id` as its destination.
+Missing or malformed context produces a warning and skips the notification.
+Both consumers use the context version for Slack titles and release lookups and read the stored user map path.
+`/update` uses the stored job name pattern for live status lookup. A context missing these fields uses an empty version,
+the `deploy ($purpose)` job pattern, and `.github/deploy-notify/user-map.json`.
+The notifier reads the event and SHA from `@actions/github` context. For `workflow_run` events, it uses the triggering
+run's `workflow_run.head_sha` when available. Otherwise it uses the current run's `GITHUB_SHA`.
 
 ### Status resolution
 
@@ -71,8 +76,8 @@ between message edits.
 
 ### Final deployment baseline and changes
 
-When a workflow supplies `version`, `fetchRelease` uses `@actions/github` to look up a published release with that exact
-tag. A match supplies the release body and a release link. A release with an empty body still supplies its link.
+When a workflow supplies `version` to `/post`, `fetchRelease` uses `@actions/github` to look up a published release
+with that exact tag. A match supplies the release body and a release link. A release with an empty body still supplies its link.
 When the version is blank, the release is missing, or the lookup fails, the action uses the commit comparison.
 
 `lastSuccessfulDeploySha` first checks the 20 most recent deployment records for the last tracked purpose. GitHub calls

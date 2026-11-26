@@ -14,7 +14,11 @@ async function update() {
   try {
     const inputs = readUpdateInputs();
     const { context, slackToken } = inputs;
-    const { message, summary } = await fetchStatusMessage(inputs, context.tracked_purposes);
+    const { version, jobNamePattern, 'user-map-path': userMapPath } = context;
+    const { message, summary } = await fetchStatusMessage(
+      { ...inputs, version, jobNamePattern, userMapPath },
+      context.tracked_purposes,
+    );
     await updateMessage(slackToken, {
       channel: context.channel_id,
       ts: context.message_ts,

@@ -3,21 +3,9 @@ name: 'Deploy Slack Notify Update'
 description: 'Update an existing Slack deployment message. All failures are non-fatal.'
 
 inputs:
-  commit-sha:
-    description: 'Commit being deployed; used to find the source PR and author'
-    required: false
-    default: ''
-  version:
-    description: 'Deployment version to display in Slack and use as the GitHub release tag'
-    required: false
-    default: ''
   context:
-    description: 'JSON context output from the post action, containing the message IDs and tracked purposes'
+    description: 'JSON context from the post action, including the message IDs and deployment settings'
     required: true
-  jobNamePattern:
-    description: 'Job name template for live status lookup. $purpose is replaced with the tracked purpose name.'
-    required: false
-    default: 'deploy ($purpose)'
   purpose:
     description: 'Tracked deployment purpose that the status hint applies to'
     required: false
@@ -35,10 +23,6 @@ inputs:
       Token with contents:read for release notes, pull-requests:read for PR lookup,
       and actions:read and deployments:read for job status and deploy history.
     required: true
-  user-map-path:
-    description: 'Path to the GitHub-login -> Slack-id map, relative to the repo root'
-    required: false
-    default: '.github/deploy-notify/user-map.json'
 
 runs:
   using: 'node24'

@@ -7,7 +7,7 @@ const result = buildSync({
   stdin: {
     contents: [
       "export { getInput, notice, setOutput, setSecret, warning } from '@actions/core';",
-      "export { getOctokit } from '@actions/github';",
+      "export { context, getOctokit } from '@actions/github';",
     ].join('\n'),
     resolveDir: process.cwd(),
   },

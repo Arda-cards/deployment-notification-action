@@ -19922,6 +19922,7 @@ var require_lib = __commonJS({
 // <stdin>
 var stdin_exports = {};
 __export(stdin_exports, {
+  context: () => context2,
   getInput: () => getInput,
   getOctokit: () => getOctokit,
   notice: () => notice,
@@ -24590,6 +24591,7 @@ function getOctokit(token, options, ...additionalPlugins) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  context,
   getInput,
   getOctokit,
   notice,

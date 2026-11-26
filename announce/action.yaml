@@ -5,23 +5,11 @@ description: >-
   All failures are non-fatal.
 
 inputs:
-  commit-sha:
-    description: 'Commit being deployed; used to find the source PR and author'
-    required: false
-    default: ''
-  version:
-    description: 'Deployment version to display in Slack and use as the GitHub release tag'
-    required: false
-    default: ''
   context:
-    description: 'JSON context output from the post action, used to identify the final tracked purpose'
+    description: 'JSON context from the post action, including deployment settings and the Slack channel'
     required: true
   slack-bot-token:
     description: 'Slack bot token with chat:write (empty = notifier no-ops)'
-    required: false
-    default: ''
-  slack-channel:
-    description: 'Slack channel id/name to post the announcement to (empty = notifier no-ops)'
     required: false
     default: ''
   github-token:
@@ -29,10 +17,6 @@ inputs:
       Token with contents:read, pull-requests:read, actions:read, and deployments:read
       to look up release notes, changes, and deploy history.
     required: true
-  user-map-path:
-    description: 'Path to the GitHub-login -> Slack-id map, relative to the repo root'
-    required: false
-    default: '.github/deploy-notify/user-map.json'
 
 runs:
   using: 'node24'
