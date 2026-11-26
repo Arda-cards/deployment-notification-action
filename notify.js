@@ -104,7 +104,7 @@ async function main() {
 
   if (!slackToken || !slackChannel) {
     warn(
-      'SLACK_DEPLOY_BOT_TOKEN and/or the target Slack channel are not set — skipping deploy notification.',
+      'slack-bot-token and the slack-channel are required — skipping deploy notification.',
     );
     return;
   }
