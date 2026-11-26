@@ -32,6 +32,28 @@ function setOutput(name, value) {
   appendFileSync(file, `${name}=${value}\n`);
 }
 
+function validateNotificationContext(context) {
+  const { channel_id, message_ts, tracked_purposes } = context ?? {};
+  if (typeof channel_id !== 'string' || !channel_id.trim() ||
+      typeof message_ts !== 'string' || !message_ts.trim() ||
+      !Array.isArray(tracked_purposes) || !tracked_purposes.length ||
+      !tracked_purposes.every((purpose) => typeof purpose === 'string' && purpose.trim())) {
+    throw new Error('context must include a channel_id, message_ts, and a non-empty tracked_purposes array.');
+  }
+  return { channel_id, message_ts, tracked_purposes };
+}
+
+function readNotificationContext(input) {
+  if (!input.trim()) throw new Error('No context was provided from the post action.');
+  let context;
+  try {
+    context = JSON.parse(input);
+  } catch {
+    throw new Error('context must be valid JSON from the post action.');
+  }
+  return validateNotificationContext(context);
+}
+
 async function fetchPrForCommit({ repository, sha, token }) {
   if (!sha) return null;
   const prs = await githubApi(`/repos/${repository}/commits/${sha}/pulls`, token, { warn });
@@ -87,9 +109,8 @@ async function main(mode) {
     INPUT_JOBNAMEPATTERN: jobNamePattern,
     INPUT_PURPOSE: inputPurpose = env.PURPOSE ?? '',
     INPUT_STATUS: status = env.STATUS ?? 'pending',
+    INPUT_CONTEXT: inputContext = env.CONTEXT ?? '',
     'INPUT_COMMIT-SHA': inputSha = env.COMMIT_SHA ?? '',
-    'INPUT_MESSAGE-TS': messageTs = env.MESSAGE_TS ?? '',
-    'INPUT_CHANNEL-ID': channelId = env.CHANNEL_ID ?? '',
     'INPUT_SLACK-BOT-TOKEN': slackToken = env.SLACK_BOT_TOKEN,
     'INPUT_SLACK-CHANNEL': slackChannel = env.SLACK_CHANNEL,
     'INPUT_GITHUB-TOKEN': githubToken = env.GITHUB_TOKEN,
@@ -101,14 +122,17 @@ async function main(mode) {
     GITHUB_WORKSPACE = process.cwd(),
   } = env;
 
-  if (!slackToken || !slackChannel) {
-    warn(
-      'slack-bot-token and the slack-channel are required — skipping deploy notification.',
-    );
+  if (!slackToken) {
+    warn('slack-bot-token is required — skipping deploy notification.');
+    return;
+  }
+  if (mode !== 'update' && !slackChannel) {
+    warn('slack-channel is required — skipping deploy notification.');
     return;
   }
 
-  const names = parseTrackedPurposes(env['INPUT_TRACKED-PURPOSE'] ?? env.TRACKED_PURPOSES);
+  const context = mode === 'post' ? null : readNotificationContext(inputContext);
+  const names = context?.tracked_purposes ?? parseTrackedPurposes(env['INPUT_TRACKED-PURPOSE'] ?? env.TRACKED_PURPOSES);
   const finalPurpose = names.at(-1);
   const commitSha = inputSha || env.GITHUB_SHA || '';
   const repoUrl = `${serverUrl}/${repository}`;
@@ -170,19 +194,19 @@ async function main(mode) {
       unfurl_links: false,
       unfurl_media: false,
     });
-    setOutput('message-ts', res.ts);
-    setOutput('channel-id', res.channel);
+    const postedContext = validateNotificationContext({
+      channel_id: res.channel,
+      message_ts: res.ts,
+      tracked_purposes: names,
+    });
+    setOutput('context', JSON.stringify(postedContext));
     notice(`Posted deploy status message (ts=${res.ts}): ${statusSummary}`);
     return;
   }
 
-  if (!messageTs || !channelId) {
-    warn('No message ts/channel from the post step — nothing to update.');
-    return;
-  }
   await slackCall('chat.update', slackToken, {
-    channel: channelId,
-    ts: messageTs,
+    channel: context.channel_id,
+    ts: context.message_ts,
     text,
     blocks,
   });

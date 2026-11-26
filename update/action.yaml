@@ -11,10 +11,9 @@ inputs:
     description: 'Deployment version to display after the repository name in Slack'
     required: false
     default: ''
-  tracked-purpose:
-    description: 'Comma-separated purposes in deployment order. The last purpose sets the deployment baseline.'
-    required: false
-    default: 'dev, stage, demo, prod'
+  context:
+    description: 'JSON context output from the post action, containing the message IDs and tracked purposes'
+    required: true
   jobNamePattern:
     description: 'Job name template for live status lookup. $purpose is replaced with the tracked purpose name.'
     required: false
@@ -27,20 +26,8 @@ inputs:
     description: 'Status hint for the specified purpose (a job result, or in_progress/pending)'
     required: false
     default: 'pending'
-  message-ts:
-    description: 'Slack message ts returned by the post action'
-    required: false
-    default: ''
-  channel-id:
-    description: 'Slack channel id returned by the post action'
-    required: false
-    default: ''
   slack-bot-token:
     description: 'Slack bot token with chat:write (empty = notifier no-ops)'
-    required: false
-    default: ''
-  slack-channel:
-    description: 'Slack channel id/name configured for the post action (empty = notifier no-ops)'
     required: false
     default: ''
   github-token:

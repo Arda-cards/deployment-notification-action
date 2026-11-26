@@ -7,7 +7,7 @@
   Their entry scripts call [notify.js](notify.js) on the runner's built-in Node.js 24 runtime. The JavaScript uses
   CommonJS and runs without a build step. The notifier reads the runner's `INPUT_*` variables, which preserve hyphens
   in input names. Running `node notify.js` directly supports environment variables such as `MODE`, `COMMIT_SHA`,
-  `PURPOSE`, and `STATUS`.
+  `PURPOSE`, `STATUS`, and `CONTEXT`.
 - [undeployed-digest.js](undeployed-digest.js) is a separate entry point for a scheduled workflow. It posts one message
   about commits on `main` that have yet to reach the final purpose.
 - [io.js](io.js) shares GitHub, Slack, filesystem, and workflow-command I/O between the entry points. [lib.js](lib.js)
@@ -19,14 +19,16 @@ entry point can report it consistently. A missing or invalid user map behaves as
 
 ## Deployment notification
 
-The frontend deployment workflow posts after `dev` finishes. The `/post` action returns the Slack message timestamp
-and channel ID through `GITHUB_OUTPUT`. The `/update` action uses those outputs to edit the same message as the commit
-moves through the configured purposes. The `/announce` action sends a separate announcement for the final purpose.
+The frontend deployment workflow posts after `dev` finishes. The `/post` action writes a single `context` output to
+`GITHUB_OUTPUT` with the actual Slack `channel_id`, the `message_ts`, and the ordered `tracked_purposes` array.
+`/update` uses the context to edit the existing message and keep its purpose order. `/announce` uses the last purpose
+from the context and posts to its own `slack-channel`. Missing or malformed context produces a warning and skips the
+notification.
 When `commit-sha` is empty, the notifier uses `GITHUB_SHA`, which also covers manual deployment runs.
 
 ### Status resolution
 
-`tracked-purpose` controls the ordered list of deployment purposes and defaults to `dev, stage, demo, prod`. The parser
+On `/post`, `tracked-purpose` controls the ordered list of deployment purposes and defaults to `dev, stage, demo, prod`. The parser
 trims names, lowercases them, ignores blanks, and keeps the first occurrence of each name. The optional `purpose` and
 `status` inputs supply one status hint for a tracked purpose. The action trims and lowercases the purpose name.
 `normalizePurposeStatus` maps a skipped deploy job to `blocked` because its
@@ -132,5 +134,6 @@ jest --config '{}' --runInBand
 - [lib.digest.test.js](lib.digest.test.js) covers summer and winter schedules, delayed runs, commit selection, and
   author-grouped digest text.
 
-Use mocked GitHub and Slack responses to smoke-test the entry points and the `GITHUB_OUTPUT` file contract.
+Use mocked GitHub and Slack responses to smoke-test the entry points and pass `/post`'s `context` output to `/update`
+and `/announce`.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for linting.

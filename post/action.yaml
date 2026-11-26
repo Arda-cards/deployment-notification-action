@@ -49,10 +49,8 @@ inputs:
     default: '.github/deploy-notify/user-map.json'
 
 outputs:
-  message-ts:
-    description: 'Slack ts of the posted message'
-  channel-id:
-    description: 'Resolved Slack channel id of the posted message'
+  context:
+    description: 'JSON with channel_id, message_ts, and the ordered tracked_purposes array'
 
 runs:
   using: 'node24'

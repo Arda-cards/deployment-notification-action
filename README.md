@@ -10,14 +10,16 @@ See the [post action inputs and outputs](post/action.yaml), [update action input
 
 ## Usage
 
-All three actions use the GitHub Actions runner's built-in Node.js 24 runtime. Provide a Slack bot token with `chat:write`
-and a channel the bot can post to.
-Pass the `message-ts` and `channel-id` outputs from `/post` to later `/update` steps, along with the Slack bot token and
-channel. Call `/announce` after the final deployment succeeds and set `slack-channel` to the announcement destination.
+All three actions use the GitHub Actions runner's built-in Node.js 24 runtime and a Slack bot token with `chat:write`.
+Set `slack-channel` for `/post` and `/announce` to their respective destinations.
 
-Set `tracked-purpose` to a comma-separated list in deployment order, such as `preview, stage, prod`.
-Use the same list for `post`, `update`, and `announce`. An omitted or blank list defaults to `dev, stage, demo, prod`.
-The last purpose sets the baseline for comparing changes and is named when the deployment completes.
+Pass the `context` output from `/post` directly to `/update` and `/announce`. It is a JSON string containing
+`channel_id`, `message_ts`, and the ordered `tracked_purposes` array. `/update` uses the stored message IDs, and
+`/announce` uses the last purpose in the array. Call `/announce` after the final deployment succeeds.
+
+Set `tracked-purpose` on `/post` to a comma-separated list in deployment order, such as `preview, stage, prod`.
+An omitted or blank list defaults to `dev, stage, demo, prod`. The last purpose sets the baseline for comparing changes
+and is named when the deployment completes.
 Slack headlines include the calling repository's name, for example `arda-frontend-app live in release`.
 Set the optional `version` input to display it after the repository name, as in `arda-frontend-app v1.2.3 live in release`.
 The default is an empty string. Pass the same version to `post`, `update`, and `announce` to show it throughout a deployment.
@@ -43,26 +45,25 @@ steps:
       slack-channel: ${{ vars.SLACK_DEPLOY_CHANNEL }}
 ```
 
-Use the output expressions below in a later step of the same job. For a separate job, expose the post step's outputs
-as job outputs and read them through `needs`.
+Use the `context` expression below in later steps of the same job. For a separate job, expose the post step's `context`
+as a job output and read it through `needs`.
 
 ```yaml
 - name: Update deployment status
   uses: Arda-cards/deployment-notification-action/update@main
   with:
+    context: ${{ steps.notify.outputs.context }}
     purpose: stage
     status: success
-    message-ts: ${{ steps.notify.outputs.message-ts }}
-    channel-id: ${{ steps.notify.outputs.channel-id }}
     github-token: ${{ github.token }}
     slack-bot-token: ${{ secrets.SLACK_DEPLOY_BOT_TOKEN }}
-    slack-channel: ${{ vars.SLACK_DEPLOY_CHANNEL }}
 ```
 
 ```yaml
 - name: Announce deployment
   uses: Arda-cards/deployment-notification-action/announce@main
   with:
+    context: ${{ steps.notify.outputs.context }}
     github-token: ${{ github.token }}
     slack-bot-token: ${{ secrets.SLACK_DEPLOY_BOT_TOKEN }}
     slack-channel: ${{ vars.SLACK_PRODUCT_CHANNEL }}

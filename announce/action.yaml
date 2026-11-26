@@ -13,10 +13,9 @@ inputs:
     description: 'Deployment version to display after the repository name in Slack'
     required: false
     default: ''
-  tracked-purpose:
-    description: 'Comma-separated purposes in deployment order. The last purpose sets the deployment baseline.'
-    required: false
-    default: 'dev, stage, demo, prod'
+  context:
+    description: 'JSON context output from the post action, used to identify the final tracked purpose'
+    required: true
   slack-bot-token:
     description: 'Slack bot token with chat:write (empty = notifier no-ops)'
     required: false
