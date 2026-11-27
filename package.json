@@ -2,13 +2,16 @@
   "name": "deployment-notification-action",
   "private": true,
   "scripts": {
-    "build": "node scripts/bundle-toolkit.js"
+    "build": "node scripts/bundle-toolkit.js",
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@actions/core": "3.0.1",
     "@actions/github": "9.1.1"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "jest": "30.5.2",
+    "js-yaml": "5.5.0"
   }
 }

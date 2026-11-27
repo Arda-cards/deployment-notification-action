@@ -144,10 +144,11 @@ unparsable schedule allows the digest to run.
 
 ## Verification
 
-With Node.js 24 and Jest available, run the three suites from the repository root:
+Use the Node.js version in `.nvmrc` and run the tests from the repository root:
 
 ```sh
-jest --config '{}' --runInBand
+npm ci
+npm test
 ```
 
 - [lib.status.test.js](lib.status.test.js) covers status normalization, job indexing, approvals, and headline priority.
@@ -155,6 +156,7 @@ jest --config '{}' --runInBand
   layouts for single changes and ranges.
 - [lib.digest.test.js](lib.digest.test.js) covers summer and winter schedules, delayed runs, commit selection, and
   author-grouped digest text.
+- [action-runtime.test.js](action-runtime.test.js) checks that the Node.js major in `.nvmrc` matches every action manifest.
 
 Use mocked GitHub and Slack responses to smoke-test the entry points and pass `/post`'s `context` output to `/update`
 and `/announce`.

@@ -22,6 +22,18 @@ jobs:
       - uses: super-linter/super-linter@v9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  test:
+    if: ${{ ! github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npm test
   is-target-branch-protected:
     if: ${{ ! github.event.pull_request.draft }}
     runs-on: ubuntu-latest
